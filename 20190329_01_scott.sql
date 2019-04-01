@@ -758,7 +758,7 @@ SELECT SANO "사원번호", SANAME "사원명", JUBUN "주민번호"
        END "성별"
        -- 현재나이 = 현재년도 - 태어난년도 + 1 (1900년대 생 / 2000년대 생)
     , CASE WHEN SUBSTR(JUBUN, 7, 1) IN ('1', '2')       -- 1900년대 생
-           THEN TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY') - (주민번호 앞 두자리 + 1899)  -- 태어나자마자 1살 먹으니까 (1900-1)을 더함
+           THEN TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - (주민번호 앞 두자리 + 1899)  -- 태어나자마자 1살 먹으니까 (1900-1)을 더함
            WHEN SUBSTR(JUBUN, 7, 1) IN ('3', '4')       -- 2000년대 생
            THEN EXTRACT(YEAR FROM SYSDATE) - (주민번호 앞 두자리 + 1999)
            ELSE 0 -- THEN 의 결과값이 숫자 타입이기 때문에 '나이확인불가'(문자타입)을 결과값으로 반환할 수 없음
@@ -787,14 +787,15 @@ SELECT SANO "사원번호", SANAME "사원명", JUBUN "주민번호"
        END "성별"
        -- 현재나이 = 현재년도 - 태어난년도 + 1 (1900년대 생 / 2000년대 생)
     , CASE WHEN SUBSTR(JUBUN, 7, 1) IN ('1', '2')       -- 1900년대 생
-           THEN TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY') - (TO_NUMBER(SUBSTR(JUBUN, 1, 2)) + 1899)  
+           THEN TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - (TO_NUMBER(SUBSTR(JUBUN, 1, 2)) + 1899)  
            WHEN SUBSTR(JUBUN, 7, 1) IN ('3', '4')       -- 2000년대 생
-           THEN EXTRACT(YEAR FROM SYSDATE) - (TO_NUMBER(SUBSTR(JUBUN, 1, 2) + 1999)
+           THEN EXTRACT(YEAR FROM SYSDATE) - (TO_NUMBER(SUBSTR(JUBUN, 1, 2)) + 1999)
            ELSE 0 -- THEN 의 결과값이 숫자 타입이기 때문에 '나이확인불가'(문자타입)을 결과값으로 반환할 수 없음
        END "현재나이"
+     , HIREDATE "입사일"
+     , SAL "급여"
 FROM TBL_SAWON;
 
 --> 현재년도 구하는 공식 1) TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')
 --                       2) EXTRACT(YEAR FROM SYSDATE)
 --  숫자타입의 현재년도가 결과값. 메모리 효율이 더 좋은 것은 없고, 두 방식 모두 차이는 없다.
-
