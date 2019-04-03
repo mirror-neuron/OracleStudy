@@ -163,6 +163,9 @@ FROM TBL_INSA;
 
 02. SCOTT 사용자 소유 테이블 목록 확인(2가지 구문 활용)
 
+
+
+
 --03. TBL_INSA 테이블 구조 확인
 DESC TBL_INSA;
 
@@ -270,15 +273,26 @@ WHERE EXTRACT(YEAR FROM IBSADATE) || EXTRACT(MONTH FROM IBSADATE) = 200010;
 
 
 --21. 주민번호를 기준으로 직원의 나이 조회.
-    단, 모든 직원이 1900년대에 태어났다는 가정. (이름, 주민번호, 나이)
+--    단, 모든 직원이 1900년대에 태어났다는 가정. (이름, 주민번호, 나이)
 SELECT NAME "이름", SSN "주민번호"
      , EXTRACT(YEAR FROM SYSDATE) - TO_NUMBER(SUBSTR(SSN, 1, 2) + 1899)"나이"
 FROM TBL_INSA;
 
-22. 주민번호 기준으로 현재 나이대가 20대인 사람만 조회.
-
-
-
+--22. 주민번호 기준으로 현재 나이대가 20대인 사람만 조회.
+SELECT CASE WHEN T.나이 BETWEEN 20 AND 29
+            THEN T.나이
+            ELSE NULL
+        END "20대"
+FROM
+(
+SELECT CASE WHEN SUBSTR(SSN, 8, 1) IN ('1', '2') 
+            THEN EXTRACT(YEAR FROM SYSDATE) - TO_NUMBER(SUBSTR(SSN, 1, 2) + 1899) 
+            WHEN SUBSTR(SSN, 8, 1) IN ('3', '4')
+            THEN EXTRACT(YEAR FROM SYSDATE) - TO_NUMBER(SUBSTR(SSN, 1, 2) + 1999)
+            ELSE 0
+        END "나이"
+FROM TBL_INSA
+) T;
 
 --23. 주민번호 기준으로 5월 생만 조회. 
 --    단, SUBSTR() 함수 이용.
@@ -286,26 +300,16 @@ SELECT *
 FROM TBL_INSA
 WHERE SUBSTR(SSN, 3, 2) = '05';
 
-24. 주민번호 기준으로 5월 생만 조회. 
-    단, TO_CHAR() 함수 이용.
-SELECT *
+--24. 주민번호 기준으로 5월 생만 조회. 
+--    단, TO_CHAR() 함수 이용.
+SELECT *  
 FROM TBL_INSA
-WHERE TO_NUMBER(TO_CHAR(SSN, 'MM') = 05;
+WHERE TO_CHAR(TO_DATE(SUBSTR(SSN, 3, 2),'MM'), 'MM')='05';
 
 
 25. 출신도 내림차순으로 정렬하고, 출신도가 같으면 기본급 내림차순 정렬 조회
-SELECT T.*
-     , CASE WHEN T.출신도시 = CITY 
-            THEN ORDER BY T.기본급 DESC
-            ELSE '확인불가'
-        END "출신도시"
-FROM
-(
-SELECT CITY "출신도시", BASICPAY "기본급"
-FROM TBL_INSA 
-ORDER BY CITY DESC
-) T
-ORDER BY T.출신도시 DESC;
+
+
 
 --26. 서울 사람 중에서 기본급+수당(→급여) 내림차순으로 정렬.
 --    ( 이름, 출신도, 기본급+수당 )
@@ -316,18 +320,17 @@ ORDER BY (BASICPAY+SUDANG) DESC;
 
 27. 여자 중 부서 오름차순으로 정렬하고, 부서가 같으면 기본급 내림차순 정렬. 
     ( 이름, 주민번호, 부서, 기본급 )
-SELECT T.이름, T.주민번호, T.부서, T.기본급 
-FROM 
-(
+
 SELECT NAME "이름", SSN "주민번호", BUSEO "부서", BASICPAY "기본급"
-FROM TBL_INSA
-WHERE SUBSTR(SSN, 8, 1) = ('2', '4')
-ORDER BY BUSEO;
+FROM
+(
+    SELECT BUSEO 
+    FROM TBL_INSA
+    WHERE SUBSTR(SSN, 8, 1) IN ('2', '4')
+    ORDER BY BUSEO;
 ) T
-WHERE CASE WHEN T.부서 = BUSEO 
-           THEN ORDER BY T.기본급 DESC
-           ELSE '확인불가'
-       END "정렬";
+T.BUSEO  
+
        
 28. 남자 중 나이를 기준으로 오름차순 정렬하여 조회.
 SELECT *
@@ -337,13 +340,16 @@ ORDER BY EXTRACT(YEAR FROM SYSDATE) - TO_NUMBER(SUBSTR(SSN, 1, 2) + 1899);
 
 29. 서울 지역 사람들 중에서 입사일이 빠른 사람을 먼저 볼 수 있도록 조회.
 
+FROM TBL_INSA
+WHERE CITY ='서울'
+ORDER BY EXTRACT(YEAR FROM SYSDATE) - 
 
-30. 성씨가 김씨가 아닌 사람 조회. 
+--30. 성씨가 김씨가 아닌 사람 조회. 
     단, 성씨는 한 글자라고 가정.
     ( 이름, 출신도, 기본급 ).
-
+SELECT NAME "이름", CITY "출신도시", BASICPAY "기본급"
 FROM TBL_INSA
-WHERE
+WHERE SUBSTR(NAME, 1, 1) != '김';
 
 
 31. 출신도가 서울, 부산, 대구 이면서
