@@ -173,22 +173,14 @@ EXEC PRC_INSA_INSERT('김선아', '901212-2234567', SYSDATE, '서울'
 */
 
 EXEC PRC_INSA_INSERT('김선아', '901212-2234567', SYSDATE, '서울', '010-5555-5555', '영업부', '대리', 1000000, 200000);
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
 
 SELECT *
 FROM TBL_INSA;
---WHERE NUM = '1061';
 --==>>
 /*
-이름       널?       유형           
--------- -------- ------------ 
-NUM      NOT NULL NUMBER(5)    
-NAME     NOT NULL VARCHAR2(20) 
-SSN      NOT NULL VARCHAR2(14) 
-IBSADATE NOT NULL DATE         
-CITY              VARCHAR2(10) 
-TEL               VARCHAR2(15) 
-BUSEO    NOT NULL VARCHAR2(15) 
-JIKWI    NOT NULL VARCHAR2(15) 
-BASICPAY NOT NULL NUMBER(10)   
-SUDANG   NOT NULL NUMBER(10)
+1061	김선아	901212-2234567	19/04/09	서울	010-5555-5555	영업부	대리	1000000	200000
+1001	홍길동	771212-1022432	98/10/11	서울	011-2356-4528	기획부	부장	2610000	200000
+                      :                                   :
 */
+
