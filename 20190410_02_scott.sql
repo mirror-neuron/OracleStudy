@@ -379,8 +379,11 @@ EXEC PRC_출고_UPDATE(2, 201);
 --==>> ORA-20002: 재고 부족~!!!
 
 
+SELECT*
+FROM TBL_상품;
 
+SELECT *
+FROM TBL_입고;
 
-
-
-
+SELECT *
+FROM TBL_출고;
