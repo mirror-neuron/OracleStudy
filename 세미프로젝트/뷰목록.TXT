@@ -1,0 +1,182 @@
+=====================================================
+--■■■ 학생 과정정보 출력 뷰 ■■■--
+=======================================================
+CREATE OR REPLACE VIEW VIEW_ST_COU
+AS
+SELECT TC.STU_CODE"학생코드",ts.name"학생이름",tc.regist_code"개설과정코드",tc.op_course_code"수강신청코스코드"
+FROM TBL_STUDENTS TS LEFT JOIN TBL_COU_REGIST TC
+ON ts.stu_code = tc.stu_code
+
+===============================================================
+■■■■■■■ 관리자 과목출력 뷰 생성 ■■■■■■■■■
+==============================================================
+/*
+관리자가 등록된 모든 과정과 과목정보를 출력하기 위해 생성
+(과정명, 강의실, 과목명, 과목기간(시작,종료), 교재명, 교수자명)
+*/
+CREATE OR REPLACE VIEW VIEW_AD_ALL_INFO
+AS
+SELECT CO.NAME"과정명", CL.NAME"강의실", SU.NAME"과목명", OS.START_DATE"과목시작일", OS.END_DATE"과목종료일", BO.NAME"교재명", PR.NAME"교수자명"
+FROM TBL_COURSES CO, TBL_CLASSROOM CL, TBL_SUBJECTS SU, TBL_OP_SUBJECTS OS, TBL_BOOKS BO, TBL_PROFESSORS PR, TBL_OP_COURSES OC
+WHERE CO.COURSE_CODE = OC.COURSE_CODE AND CL.CLR_CODE = OC.CLR_CODE AND SU.SUBJECT_CODE = OS.SUBJECT_CODE 
+  AND BO.BOOK_CODE = OS.BOOK_CODE AND PR.PRO_CODE = OS.PRO_CODE;
+
+
+
+
+===============================================================
+■■■■■■■ 과정참여 학생정보 출력 ■■■■■■■■■
+==============================================================
+/*
+과정에 참여중인 학생의 정보를 출력하기 위해 생성
+(학생명, 과목명, 과목시작일, 과목종료일, 과정명, 수강신청코드, 성적코드, 출석, 필기, 실기)
+*/
+CREATE OR REPLACE VIEW VIEW_ALL_ST_INFO
+AS
+SELECT ST.NAME"학생명", SU.NAME"과목명", OS.START_DATE"과목시작", OS.END_DATE"과목종료", CO.NAME"과정명"
+     , CR.REGIST_CODE"수강신청코드", GR.GRADE_CODE"성적코드", GR.ATTEND"출석", GR.WRITE"필기", GR.PRACTICE"실기"
+FROM     TBL_STUDENTS ST JOIN TBL_COU_REGIST CR
+      ON ST.STU_CODE = CR.STU_CODE
+    JOIN TBL_OP_COURSES OC
+      ON OC.OP_COURSE_CODE = CR.OP_COURSE_CODE
+    JOIN TBL_OP_SUBJECTS OS
+      ON OC.OP_COURSE_CODE = OS.OP_COURSE_CODE
+    JOIN TBL_SUBJECTS SU
+      ON SU.SUBJECT_CODE = OS.SUBJECT_CODE
+    JOIN TBL_COURSES CO
+      ON CO.COURSE_CODE = OC.COURSE_CODE
+    JOIN TBL_GRADE GR
+      ON OS.OP_SUBJECT_CODE = GR.OP_SUBJECT_CODE
+      AND CR.REGIST_CODE = GR.REGIST_CODE
+ORDER BY 1;
+
+
+
+
+============================================
+■■■■■■학생성적 출력하는 뷰■■■■■■
+============================================
+
+CREATE OR REPLACE VIEW VIEW_STUDENTS_GRADE
+AS
+SELECT T.학생코드, T.이름, T.과정명, T.과목명, T.시작일, T.종료일, T.교재명, T.출결, T.필기, T.실기, T.총점, RANK() OVER(PARTITION BY T.개설과목코드 ORDER BY T.총점 DESC)"등수"
+FROM
+(
+SELECT ST.STU_CODE"학생코드", ST.NAME"이름",COU.NAME"과정명",SUB.NAME"과목명",CO.START_DATE"시작일"
+      ,CO.END_DATE"종료일",BO.NAME"교재명",GR.ATTEND"출결",GR.WRITE"필기",GR.PRACTICE"실기"
+      
+      ,GR.ATTEND*((SELECT ALLOT
+                  FROM TBL_ALLOT
+                  WHERE POINT_CODE = 'P1' AND OP_SUBJECT_CODE = GR.OP_SUBJECT_CODE)/100) +
+       GR.WRITE*((SELECT ALLOT
+                  FROM TBL_ALLOT
+                  WHERE POINT_CODE = 'P2' AND OP_SUBJECT_CODE = GR.OP_SUBJECT_CODE)/100) +
+       GR.PRACTICE*((SELECT ALLOT
+                  FROM TBL_ALLOT
+                  WHERE POINT_CODE = 'P3' AND OP_SUBJECT_CODE = GR.OP_SUBJECT_CODE)/100)"총점"
+                      
+      
+      ,CO.OP_COURSE_CODE"개설과정코드",SU.OP_SUBJECT_CODE"개설과목코드"
+FROM TBL_STUDENTS ST JOIN TBL_COU_REGIST RE
+ON ST.STU_CODE = RE.STU_CODE
+        FULL OUTER JOIN TBL_GRADE GR
+        ON RE.REGIST_CODE = GR.REGIST_CODE
+            FULL OUTER JOIN TBL_OP_COURSES CO
+            ON RE.OP_COURSE_CODE = CO.OP_COURSE_CODE
+                JOIN TBL_COURSES COU
+                ON CO.COURSE_CODE = COU.COURSE_CODE
+                    FULL OUTER JOIN TBL_OP_SUBJECTS SU
+                    ON GR.OP_SUBJECT_CODE = SU.OP_SUBJECT_CODE
+                        JOIN TBL_SUBJECTS SUB
+                        ON SU.SUBJECT_CODE = SUB.SUBJECT_CODE
+                            JOIN TBL_BOOKS BO
+                            ON SU.BOOK_CODE = BO.BOOK_CODE
+)T;
+
+
+============================================
+■■■■■■발표용 뷰 생성1■■■■■■
+============================================
+CREATE OR REPLACE VIEW PREVIEW_PROFESSORS_IDPW
+AS
+SELECT PR.NAME"이름",PR.SSN"주민번호",IP.ID,IP.PW
+FROM TBL_PROFESSORS PR JOIN TBL_IDPW IP
+ON PR.ID = IP.ID;
+
+===============================================
+■■■■■■발표용 뷰 생성2■■■■■■
+=============================================
+CREATE OR REPLACE VIEW PREVIEW_STUDENTS_IDPW
+AS
+SELECT ID.ID"ID",ST.NAME"이름",ST.SSN"주민번호",ID.PW
+FROM TBL_IDPW ID JOIN TBL_STUDENTS ST
+ON ID.ID = ST.ID;
+
+
+/*
+===========================================================================
+     ■■■■■■■ 교수자 정보 뷰 생성 ■■■■■■■■■
+===========================================================================
+- 교수자 계정 관리 기능 구현한 뷰 
+  교수명, 배정된과목명, 기간, 교재명, 강의실, 강의진행여부 조회 
+*/
+CREATE OR REPLACE VIEW VIEW_PROFESSORS
+AS
+SELECT PR.NAME "교수명", SU.NAME "배정된과목명", OS.START_DATE "시작일", OS.END_DATE "종료일"
+     , BO.NAME "교재명", CL.NAME "강의실"
+     , (CASE WHEN SYSDATE BETWEEN OS.START_DATE AND OS.END_DATE
+             THEN '강의진행중' ELSE '강의준비중' END) "강의진행여부"
+FROM TBL_OP_SUBJECTS OS JOIN TBL_OP_COURSES OC
+ON OS.OP_COURSE_CODE = OC.OP_COURSE_CODE
+    JOIN TBL_PROFESSORS PR
+    ON OS.PRO_CODE = PR.PRO_CODE
+        JOIN TBL_SUBJECTS SU
+        ON OS.SUBJECT_CODE = SU.SUBJECT_CODE
+            JOIN TBL_BOOKS BO
+            ON OS.BOOK_CODE = BO.BOOK_CODE
+                JOIN TBL_CLASSROOM CL
+                ON OC.CLR_CODE = CL.CLR_CODE;
+--==>> View VIEW_PROFESSORS이(가) 생성되었습니다.
+
+
+/*
+===========================================================================
+     ■■■■■■■ 학생 정보 뷰 생성 ■■■■■■■■■
+===========================================================================
+- 관리자 학생 관리 기능 구현한 뷰
+  학생명, 과정명, 수강과목, 수강과목 총점, 중도탈락여부 조회 
+*/
+CREATE OR REPLACE VIEW VIEW_STUDENTS
+AS
+SELECT ST.NAME "학생명", CO.NAME "과정명", SU.NAME "수강과목", 
+       NVL((GR.ATTEND*((SELECT ALLOT FROM TBL_ALLOT WHERE OP_SUBJECT_CODE = OS.OP_SUBJECT_CODE AND POINT_CODE = 'PT10001')/100) 
+        + GR.WRITE*((SELECT ALLOT FROM TBL_ALLOT WHERE OP_SUBJECT_CODE = OS.OP_SUBJECT_CODE AND POINT_CODE = 'PT10002')/100) 
+        + GR.PRACTICE*((SELECT ALLOT FROM TBL_ALLOT WHERE OP_SUBJECT_CODE = OS.OP_SUBJECT_CODE AND POINT_CODE = 'PT10003')/100)),0)"수강과목총점"
+     , (CASE WHEN CR.REGIST_CODE = QU.REGIST_CODE THEN '중도탈락' ELSE ' ' END) "중도탈락여부"          
+FROM TBL_STUDENTS ST JOIN TBL_COU_REGIST CR 
+ON ST.STU_CODE = CR.STU_CODE
+    LEFT JOIN TBL_OP_COURSES OC
+    ON CR.OP_COURSE_CODE = OC.OP_COURSE_CODE
+        LEFT JOIN TBL_COURSES CO
+        ON OC.COURSE_CODE = CO.COURSE_CODE
+            LEFT JOIN TBL_OP_SUBJECTS OS
+            ON OC.OP_COURSE_CODE = OS.OP_COURSE_CODE
+                LEFT JOIN TBL_SUBJECTS SU
+                ON OS.SUBJECT_CODE = SU.SUBJECT_CODE
+                    LEFT JOIN TBL_GRADE GR
+                    ON OS.OP_SUBJECT_CODE = GR.OP_SUBJECT_CODE AND GR.REGIST_CODE = CR.REGIST_CODE
+                        LEFT JOIN TBL_QUIT QU
+                        ON CR.REGIST_CODE = QU.REGIST_CODE;
+--==>> View VIEW_STUDENTS이(가) 생성되었습니다.
+=================================================================================
+■■■■■■■ 발표용 VIEW3 생성 ■■■■■■■■■
+===============================================================================
+CREATE OR REPLACE VIEW VIEW_PR_REMATCH_TEST
+AS
+SELECT PR.NAME"교수명",PR.PRO_CODE"교수코드", SU.NAME"개설된과목명",OS.SUBJECT_CODE"개설된과목코드"
+FROM TBL_PROFESSORS PR JOIN TBL_OP_SUBJECTS OS
+     ON PR.PRO_CODE = OS.PRO_CODE
+     JOIN TBL_SUBJECTS SU
+     ON SU.SUBJECT_CODE = OS.SUBJECT_CODE
+     AND PR.PRO_CODE = OS.PRO_CODE
+ORDER BY 2;
